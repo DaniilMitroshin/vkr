@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -38,6 +40,9 @@ func main() {
 
 	store := repository.New(pool)
 	svc := service.New(store)
+	if err = seedOnStart(ctx, cfg, svc); err != nil {
+		log.Fatalf("seed on start: %v", err)
+	}
 	handler := httpapi.New(svc)
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -71,4 +76,47 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	_ = server.Shutdown(shutdownCtx)
+}
+
+func seedOnStart(ctx context.Context, cfg config.Config, svc *service.Service) error {
+	if !cfg.SeedOnStart {
+		return nil
+	}
+
+	if strings.TrimSpace(cfg.SeedStudentsFile) != "" {
+		count, err := importStudentsFile(ctx, svc, cfg.SeedStudentsFile)
+		if err != nil {
+			return err
+		}
+		log.Printf("Seeded students from %s: %d", cfg.SeedStudentsFile, count)
+	}
+
+	if strings.TrimSpace(cfg.SeedChoicesFile) != "" {
+		count, err := importChoicesFile(ctx, svc, cfg.SeedChoicesFile)
+		if err != nil {
+			return err
+		}
+		log.Printf("Seeded choices from %s: %d", cfg.SeedChoicesFile, count)
+	}
+
+	if strings.TrimSpace(cfg.SeedStudentsFile) == "" && strings.TrimSpace(cfg.SeedChoicesFile) == "" {
+		log.Printf("SEED_ON_START is enabled but no seed files configured")
+	}
+	return nil
+}
+
+func importStudentsFile(ctx context.Context, svc *service.Service, path string) (int, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+	return svc.ImportStudentsFile(ctx, filepath.Base(path), data)
+}
+
+func importChoicesFile(ctx context.Context, svc *service.Service, path string) (int, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+	return svc.ImportChoicesFile(ctx, filepath.Base(path), data)
 }

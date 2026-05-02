@@ -10,5 +10,6 @@ FROM alpine:3.21
 WORKDIR /app
 COPY --from=build /out/vkr /app/vkr
 COPY migrations /app/migrations
+COPY input /app/input
 EXPOSE 8080
 CMD ["/app/vkr"]
