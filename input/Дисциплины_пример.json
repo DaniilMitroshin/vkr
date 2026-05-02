@@ -1,0 +1,93 @@
+[
+  {
+    "choice_code": "REQ-SEM7-AI",
+    "choice_title": "Обязательная дисциплина по выбору: интеллектуальные системы",
+    "choice_type": "required_choice",
+    "group_codes": "/20101,/20102,/20103,/30101,/30102",
+    "deadline": "2026-10-30T23:59:00+03:00",
+    "min_selected": 1,
+    "max_selected": 1,
+    "option_title": "Машинное обучение в инженерных системах",
+    "seats_limit": 35,
+    "credits": 3,
+    "info_url": "https://example.edu/courses/ml-engineering"
+  },
+  {
+    "choice_code": "REQ-SEM7-AI",
+    "choice_title": "Обязательная дисциплина по выбору: интеллектуальные системы",
+    "choice_type": "required_choice",
+    "group_codes": "/20101,/20102,/20103,/30101,/30102",
+    "deadline": "2026-10-30T23:59:00+03:00",
+    "min_selected": 1,
+    "max_selected": 1,
+    "option_title": "Анализ данных и визуализация",
+    "seats_limit": 35,
+    "credits": 3,
+    "info_url": "https://example.edu/courses/data-viz"
+  },
+  {
+    "choice_code": "FAC-SPRING",
+    "choice_title": "Факультативы весеннего семестра",
+    "choice_type": "elective",
+    "group_codes": "/20101,/20102,/20103,/30101,/30102,/30103,/30104",
+    "deadline": "2026-09-20T23:59:00+03:00",
+    "min_selected": 0,
+    "max_selected": 1,
+    "option_title": "Академическое письмо",
+    "seats_limit": 25,
+    "credits": 2,
+    "info_url": "https://example.edu/courses/academic-writing"
+  },
+  {
+    "choice_code": "FAC-SPRING",
+    "choice_title": "Факультативы весеннего семестра",
+    "choice_type": "elective",
+    "group_codes": "/20101,/20102,/20103,/30101,/30102,/30103,/30104",
+    "deadline": "2026-09-20T23:59:00+03:00",
+    "min_selected": 0,
+    "max_selected": 1,
+    "option_title": "Технический английский",
+    "seats_limit": 30,
+    "credits": 2,
+    "info_url": "https://example.edu/courses/technical-english"
+  },
+  {
+    "choice_code": "MOB-HUM-2026",
+    "choice_title": "Модуль мобильности: гуманитарные технологии",
+    "choice_type": "mobility",
+    "group_codes": "/20101,/20102,/20103,/30101,/30102,/30103,/30104",
+    "deadline": "2026-10-15T23:59:00+03:00",
+    "min_selected": 6,
+    "max_selected": 9,
+    "option_title": "Цифровая социология",
+    "seats_limit": 40,
+    "credits": 3,
+    "info_url": "https://example.edu/courses/digital-sociology"
+  },
+  {
+    "choice_code": "MOB-HUM-2026",
+    "choice_title": "Модуль мобильности: гуманитарные технологии",
+    "choice_type": "mobility",
+    "group_codes": "/20101,/20102,/20103,/30101,/30102,/30103,/30104",
+    "deadline": "2026-10-15T23:59:00+03:00",
+    "min_selected": 6,
+    "max_selected": 9,
+    "option_title": "Право в цифровой среде",
+    "seats_limit": 40,
+    "credits": 3,
+    "info_url": "https://example.edu/courses/digital-law"
+  },
+  {
+    "choice_code": "MOB-HUM-2026",
+    "choice_title": "Модуль мобильности: гуманитарные технологии",
+    "choice_type": "mobility",
+    "group_codes": "/20101,/20102,/20103,/30101,/30102,/30103,/30104",
+    "deadline": "2026-10-15T23:59:00+03:00",
+    "min_selected": 6,
+    "max_selected": 9,
+    "option_title": "Коммуникации в проектных командах",
+    "seats_limit": 40,
+    "credits": 3,
+    "info_url": "https://example.edu/courses/team-communications"
+  }
+]
