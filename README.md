@@ -11,8 +11,9 @@
 - автоматическое распределение студентов без выбора для `required_choice`;
 - REST API для проверки и интеграций;
 - Telegram-бот для студентов и администратора;
-- экспорт результатов в CSV/JSON;
-- генерация заявления студента в `.docx`;
+- экспорт результатов, полного списка студентов и зарегистрированных студентов в CSV/JSON;
+- генерация заявления студента в `.docx` по шаблонам для дисциплин по выбору, факультативов и модулей мобильности;
+- хранение администраторов в базе данных;
 - хранение данных в PostgreSQL с сохранением между перезапусками Docker.
 
 ## Быстрый запуск через Docker
@@ -86,6 +87,8 @@ curl -X POST http://localhost:8080/api/students/1/choices/REQ-SEM7-AI/submit \
 
 ```bash
 curl "http://localhost:8080/api/export/results?format=csv" -o results.csv
+curl "http://localhost:8080/api/export/students?format=json" -o students.json
+curl "http://localhost:8080/api/export/registered?format=csv" -o registered_students.csv
 curl "http://localhost:8080/api/students/1/application.docx" -o application.docx
 ```
 
@@ -104,7 +107,15 @@ curl "http://localhost:8080/api/students/1/application.docx" -o application.docx
 - отправить CSV/JSON файл с подписью `/import_choices`;
 - `/students` - первые студенты в базе;
 - `/auto REQ-SEM7-AI` - автоматическое распределение обязательного выбора;
-- `/export_csv` - выгрузка результатов.
+- `/export_csv`, `/export_json` - выгрузка распределения;
+- `/export_students_csv`, `/export_students_json` - полный список студентов;
+- `/export_registered_csv`, `/export_registered_json` - зарегистрированные студенты с выборами;
+- `/set_choice STUDENT_ID CHOICE_CODE OPTION_ID[,OPTION_ID]` - ручное изменение выбора студента;
+- `/admins` - список администраторов;
+- `/add_admin TELEGRAM_ID` - добавить администратора;
+- `/remove_admin TELEGRAM_ID` - убрать администратора.
+
+Данные PostgreSQL лежат в Docker volume `vkr_postgres_data`. Обычный перезапуск контейнеров данные не удаляет; не используйте `docker compose down -v`, если нужно сохранить базу.
 
 ## Локальный запуск без Docker
 

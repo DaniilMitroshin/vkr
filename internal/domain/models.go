@@ -24,6 +24,8 @@ type Choice struct {
 	Code        string     `json:"code"`
 	Title       string     `json:"title"`
 	Type        ChoiceType `json:"type"`
+	ProgramName string     `json:"program_name,omitempty"`
+	ProgramHead string     `json:"program_head,omitempty"`
 	GroupCodes  []string   `json:"group_codes"`
 	Deadline    time.Time  `json:"deadline"`
 	MinSelected int        `json:"min_selected"`
@@ -32,13 +34,15 @@ type Choice struct {
 }
 
 type ChoiceOption struct {
-	ID         int64  `json:"id"`
-	ChoiceID   int64  `json:"choice_id"`
-	Title      string `json:"title"`
-	SeatsLimit int    `json:"seats_limit"`
-	Credits    int    `json:"credits"`
-	InfoURL    string `json:"info_url,omitempty"`
-	Occupied   int    `json:"occupied"`
+	ID          int64  `json:"id"`
+	ChoiceID    int64  `json:"choice_id"`
+	Title       string `json:"title"`
+	SeatsLimit  int    `json:"seats_limit"`
+	Credits     int    `json:"credits"`
+	Semester    string `json:"semester,omitempty"`
+	TeacherName string `json:"teacher_name,omitempty"`
+	InfoURL     string `json:"info_url,omitempty"`
+	Occupied    int    `json:"occupied"`
 }
 
 type Enrollment struct {
@@ -50,6 +54,11 @@ type Enrollment struct {
 	CreatedAt time.Time    `json:"created_at"`
 }
 
+type StudentWithEnrollments struct {
+	Student     Student      `json:"student"`
+	Enrollments []Enrollment `json:"enrollments"`
+}
+
 type StudentImportRow struct {
 	FullName  string `json:"full_name"`
 	GroupCode string `json:"group_code"`
@@ -59,6 +68,8 @@ type ChoiceImportRow struct {
 	ChoiceCode  string     `json:"choice_code"`
 	ChoiceTitle string     `json:"choice_title"`
 	ChoiceType  ChoiceType `json:"choice_type"`
+	ProgramName string     `json:"program_name"`
+	ProgramHead string     `json:"program_head"`
 	GroupCodes  []string   `json:"group_codes"`
 	Deadline    time.Time  `json:"deadline"`
 	MinSelected int        `json:"min_selected"`
@@ -66,5 +77,7 @@ type ChoiceImportRow struct {
 	OptionTitle string     `json:"option_title"`
 	SeatsLimit  int        `json:"seats_limit"`
 	Credits     int        `json:"credits"`
+	Semester    string     `json:"semester"`
+	TeacherName string     `json:"teacher_name"`
 	InfoURL     string     `json:"info_url"`
 }

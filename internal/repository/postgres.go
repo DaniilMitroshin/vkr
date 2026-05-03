@@ -89,18 +89,22 @@ func (p *Postgres) ImportStudents(ctx context.Context, rows []domain.StudentImpo
 }
 
 func (p *Postgres) UpsertStudent(ctx context.Context, fullName, groupCode string) (domain.Student, error) {
+	fullName = NormalizeName(fullName)
+	groupCode = NormalizeGroup(groupCode)
 	var s domain.Student
 	err := p.pool.QueryRow(ctx, `
-		INSERT INTO students(full_name, group_code)
-		VALUES ($1, $2)
-		ON CONFLICT (full_name, group_code)
-		DO UPDATE SET updated_at=now()
+		INSERT INTO students(full_name, group_code, full_name_key, group_code_key)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (full_name_key, group_code_key)
+		DO UPDATE SET full_name=excluded.full_name, group_code=excluded.group_code, updated_at=now()
 		RETURNING id, full_name, group_code, telegram_id, created_at, updated_at
-	`, fullName, groupCode).Scan(&s.ID, &s.FullName, &s.GroupCode, &s.TelegramID, &s.CreatedAt, &s.UpdatedAt)
+	`, fullName, groupCode, NameKey(fullName), NormalizeGroup(groupCode)).Scan(&s.ID, &s.FullName, &s.GroupCode, &s.TelegramID, &s.CreatedAt, &s.UpdatedAt)
 	return s, err
 }
 
 func (p *Postgres) RegisterStudent(ctx context.Context, telegramID int64, fullName, groupCode string) (domain.Student, error) {
+	fullName = NormalizeName(fullName)
+	groupCode = NormalizeGroup(groupCode)
 	tx, err := p.pool.Begin(ctx)
 	if err != nil {
 		return domain.Student{}, err
@@ -111,9 +115,9 @@ func (p *Postgres) RegisterStudent(ctx context.Context, telegramID int64, fullNa
 	err = tx.QueryRow(ctx, `
 		SELECT id, full_name, group_code, telegram_id, created_at, updated_at
 		FROM students
-		WHERE lower(full_name)=lower($1) AND group_code=$2
+		WHERE full_name_key=$1 AND group_code_key=$2
 		FOR UPDATE
-	`, fullName, groupCode).Scan(&s.ID, &s.FullName, &s.GroupCode, &s.TelegramID, &s.CreatedAt, &s.UpdatedAt)
+	`, NameKey(fullName), groupCode).Scan(&s.ID, &s.FullName, &s.GroupCode, &s.TelegramID, &s.CreatedAt, &s.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Student{}, ErrNotFound
 	}
@@ -176,6 +180,19 @@ func (p *Postgres) ListStudents(ctx context.Context, limit int) ([]domain.Studen
 	return scanStudents(rows)
 }
 
+func (p *Postgres) AllStudents(ctx context.Context) ([]domain.Student, error) {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, full_name, group_code, telegram_id, created_at, updated_at
+		FROM students
+		ORDER BY group_code, full_name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanStudents(rows)
+}
+
 func (p *Postgres) ImportChoices(ctx context.Context, rows []domain.ChoiceImportRow) (int, error) {
 	grouped := make(map[string][]domain.ChoiceImportRow)
 	for _, row := range rows {
@@ -202,13 +219,15 @@ func (p *Postgres) upsertChoice(ctx context.Context, rows []domain.ChoiceImportR
 
 	var choiceID int64
 	err = tx.QueryRow(ctx, `
-		INSERT INTO choices(code, title, type, deadline, min_selected, max_selected)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO choices(code, title, type, program_name, program_head, deadline, min_selected, max_selected)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (code) DO UPDATE
-		SET title=excluded.title, type=excluded.type, deadline=excluded.deadline,
+		SET title=excluded.title, type=excluded.type,
+		    program_name=excluded.program_name, program_head=excluded.program_head,
+		    deadline=excluded.deadline,
 		    min_selected=excluded.min_selected, max_selected=excluded.max_selected
 		RETURNING id
-	`, first.ChoiceCode, first.ChoiceTitle, first.ChoiceType, first.Deadline, first.MinSelected, first.MaxSelected).Scan(&choiceID)
+	`, first.ChoiceCode, first.ChoiceTitle, first.ChoiceType, first.ProgramName, first.ProgramHead, first.Deadline, first.MinSelected, first.MaxSelected).Scan(&choiceID)
 	if err != nil {
 		return err
 	}
@@ -222,11 +241,12 @@ func (p *Postgres) upsertChoice(ctx context.Context, rows []domain.ChoiceImportR
 	}
 	for _, row := range rows {
 		if _, err = tx.Exec(ctx, `
-			INSERT INTO choice_options(choice_id, title, seats_limit, credits, info_url)
-			VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT (choice_id, title) DO UPDATE
-			SET seats_limit=excluded.seats_limit, credits=excluded.credits, info_url=excluded.info_url
-		`, choiceID, row.OptionTitle, row.SeatsLimit, row.Credits, row.InfoURL); err != nil {
+			INSERT INTO choice_options(choice_id, title, option_title_key, seats_limit, credits, semester, teacher_name, info_url)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			ON CONFLICT (choice_id, option_title_key) DO UPDATE
+			SET title=excluded.title, seats_limit=excluded.seats_limit, credits=excluded.credits,
+			    semester=excluded.semester, teacher_name=excluded.teacher_name, info_url=excluded.info_url
+		`, choiceID, NormalizeName(row.OptionTitle), NameKey(row.OptionTitle), row.SeatsLimit, row.Credits, row.Semester, row.TeacherName, row.InfoURL); err != nil {
 			return err
 		}
 	}
@@ -235,7 +255,7 @@ func (p *Postgres) upsertChoice(ctx context.Context, rows []domain.ChoiceImportR
 
 func (p *Postgres) ListChoices(ctx context.Context) ([]domain.Choice, error) {
 	rows, err := p.pool.Query(ctx, `
-		SELECT id, code, title, type, deadline, min_selected, max_selected, created_at
+		SELECT id, code, title, type, program_name, program_head, deadline, min_selected, max_selected, created_at
 		FROM choices ORDER BY deadline, code
 	`)
 	if err != nil {
@@ -261,7 +281,7 @@ func (p *Postgres) ChoicesForStudent(ctx context.Context, studentID int64) ([]do
 		return nil, err
 	}
 	rows, err := p.pool.Query(ctx, `
-		SELECT c.id, c.code, c.title, c.type, c.deadline, c.min_selected, c.max_selected, c.created_at
+		SELECT c.id, c.code, c.title, c.type, c.program_name, c.program_head, c.deadline, c.min_selected, c.max_selected, c.created_at
 		FROM choices c
 		JOIN choice_groups cg ON cg.choice_id=c.id
 		WHERE cg.group_code=$1
@@ -287,9 +307,9 @@ func (p *Postgres) ChoicesForStudent(ctx context.Context, studentID int64) ([]do
 func (p *Postgres) ChoiceByCode(ctx context.Context, code string) (domain.Choice, error) {
 	var c domain.Choice
 	err := p.pool.QueryRow(ctx, `
-		SELECT id, code, title, type, deadline, min_selected, max_selected, created_at
+		SELECT id, code, title, type, program_name, program_head, deadline, min_selected, max_selected, created_at
 		FROM choices WHERE code=$1
-	`, code).Scan(&c.ID, &c.Code, &c.Title, &c.Type, &c.Deadline, &c.MinSelected, &c.MaxSelected, &c.CreatedAt)
+	`, code).Scan(&c.ID, &c.Code, &c.Title, &c.Type, &c.ProgramName, &c.ProgramHead, &c.Deadline, &c.MinSelected, &c.MaxSelected, &c.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Choice{}, ErrNotFound
 	}
@@ -310,7 +330,7 @@ func (p *Postgres) OptionsByChoiceCode(ctx context.Context, code string) ([]doma
 
 func (p *Postgres) optionsByChoiceID(ctx context.Context, choiceID int64) ([]domain.ChoiceOption, error) {
 	rows, err := p.pool.Query(ctx, `
-		SELECT o.id, o.choice_id, o.title, o.seats_limit, o.credits, o.info_url,
+		SELECT o.id, o.choice_id, o.title, o.seats_limit, o.credits, o.semester, o.teacher_name, o.info_url,
 		       COUNT(e.id)::int AS occupied
 		FROM choice_options o
 		LEFT JOIN enrollments e ON e.option_id=o.id
@@ -454,6 +474,84 @@ func (p *Postgres) AllEnrollments(ctx context.Context) ([]domain.Enrollment, err
 	return scanEnrollments(rows)
 }
 
+func (p *Postgres) RegisteredStudentsWithEnrollments(ctx context.Context) ([]domain.StudentWithEnrollments, error) {
+	studentsRows, err := p.pool.Query(ctx, `
+		SELECT id, full_name, group_code, telegram_id, created_at, updated_at
+		FROM students
+		WHERE telegram_id IS NOT NULL
+		ORDER BY group_code, full_name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	students, err := scanStudents(studentsRows)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]domain.StudentWithEnrollments, 0, len(students))
+	byID := make(map[int64]int, len(students))
+	for _, student := range students {
+		byID[student.ID] = len(result)
+		result = append(result, domain.StudentWithEnrollments{Student: student})
+	}
+	enrollments, err := p.AllEnrollments(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, enrollment := range enrollments {
+		if idx, ok := byID[enrollment.Student.ID]; ok {
+			result[idx].Enrollments = append(result[idx].Enrollments, enrollment)
+		}
+	}
+	return result, nil
+}
+
+func (p *Postgres) SeedAdmins(ctx context.Context, ids map[int64]struct{}) error {
+	for id := range ids {
+		if _, err := p.pool.Exec(ctx, `INSERT INTO admins(telegram_id) VALUES ($1) ON CONFLICT DO NOTHING`, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Postgres) IsAdmin(ctx context.Context, telegramID int64) (bool, error) {
+	var ok bool
+	err := p.pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM admins WHERE telegram_id=$1)`, telegramID).Scan(&ok)
+	return ok, err
+}
+
+func (p *Postgres) AddAdmin(ctx context.Context, telegramID, addedBy int64) error {
+	_, err := p.pool.Exec(ctx, `
+		INSERT INTO admins(telegram_id, added_by)
+		VALUES ($1, $2)
+		ON CONFLICT (telegram_id) DO UPDATE SET added_by=excluded.added_by
+	`, telegramID, addedBy)
+	return err
+}
+
+func (p *Postgres) RemoveAdmin(ctx context.Context, telegramID int64) error {
+	_, err := p.pool.Exec(ctx, `DELETE FROM admins WHERE telegram_id=$1`, telegramID)
+	return err
+}
+
+func (p *Postgres) ListAdmins(ctx context.Context) ([]int64, error) {
+	rows, err := p.pool.Query(ctx, `SELECT telegram_id FROM admins ORDER BY telegram_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 func (p *Postgres) choiceGroups(ctx context.Context, choiceID int64) ([]string, error) {
 	rows, err := p.pool.Query(ctx, `SELECT group_code FROM choice_groups WHERE choice_id=$1 ORDER BY group_code`, choiceID)
 	if err != nil {
@@ -489,13 +587,13 @@ func (p *Postgres) lockStudentChoice(ctx context.Context, tx pgx.Tx, studentID i
 
 func (p *Postgres) choiceByCodeTx(ctx context.Context, tx pgx.Tx, code string, lock bool) (domain.Choice, error) {
 	sql := `
-		SELECT id, code, title, type, deadline, min_selected, max_selected, created_at
+		SELECT id, code, title, type, program_name, program_head, deadline, min_selected, max_selected, created_at
 		FROM choices WHERE code=$1`
 	if lock {
 		sql += ` FOR UPDATE`
 	}
 	var c domain.Choice
-	err := tx.QueryRow(ctx, sql, code).Scan(&c.ID, &c.Code, &c.Title, &c.Type, &c.Deadline, &c.MinSelected, &c.MaxSelected, &c.CreatedAt)
+	err := tx.QueryRow(ctx, sql, code).Scan(&c.ID, &c.Code, &c.Title, &c.Type, &c.ProgramName, &c.ProgramHead, &c.Deadline, &c.MinSelected, &c.MaxSelected, &c.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Choice{}, ErrNotFound
 	}
@@ -522,7 +620,7 @@ func (p *Postgres) lockOptions(ctx context.Context, tx pgx.Tx, choiceID int64, o
 		return nil, nil
 	}
 	rows, err := tx.Query(ctx, `
-		SELECT id, choice_id, title, seats_limit, credits, info_url
+		SELECT id, choice_id, title, seats_limit, credits, semester, teacher_name, info_url
 		FROM choice_options
 		WHERE choice_id=$1 AND id=ANY($2)
 		FOR UPDATE
@@ -534,7 +632,7 @@ func (p *Postgres) lockOptions(ctx context.Context, tx pgx.Tx, choiceID int64, o
 	var options []domain.ChoiceOption
 	for rows.Next() {
 		var o domain.ChoiceOption
-		if err := rows.Scan(&o.ID, &o.ChoiceID, &o.Title, &o.SeatsLimit, &o.Credits, &o.InfoURL); err != nil {
+		if err := rows.Scan(&o.ID, &o.ChoiceID, &o.Title, &o.SeatsLimit, &o.Credits, &o.Semester, &o.TeacherName, &o.InfoURL); err != nil {
 			return nil, err
 		}
 		options = append(options, o)
@@ -551,7 +649,7 @@ func (p *Postgres) lockOptions(ctx context.Context, tx pgx.Tx, choiceID int64, o
 func (p *Postgres) optionsByChoiceIDTx(ctx context.Context, tx pgx.Tx, choiceID int64, lock bool) ([]domain.ChoiceOption, error) {
 	if !lock {
 		rows, err := tx.Query(ctx, `
-			SELECT o.id, o.choice_id, o.title, o.seats_limit, o.credits, o.info_url,
+			SELECT o.id, o.choice_id, o.title, o.seats_limit, o.credits, o.semester, o.teacher_name, o.info_url,
 			       COUNT(e.id)::int AS occupied
 			FROM choice_options o
 			LEFT JOIN enrollments e ON e.option_id=o.id
@@ -565,7 +663,7 @@ func (p *Postgres) optionsByChoiceIDTx(ctx context.Context, tx pgx.Tx, choiceID 
 		return scanOptions(rows)
 	}
 	sql := `
-		SELECT id, choice_id, title, seats_limit, credits, info_url
+		SELECT id, choice_id, title, seats_limit, credits, semester, teacher_name, info_url
 		FROM choice_options
 		WHERE choice_id=$1`
 	if lock {
@@ -579,7 +677,7 @@ func (p *Postgres) optionsByChoiceIDTx(ctx context.Context, tx pgx.Tx, choiceID 
 	var result []domain.ChoiceOption
 	for rows.Next() {
 		var o domain.ChoiceOption
-		if err := rows.Scan(&o.ID, &o.ChoiceID, &o.Title, &o.SeatsLimit, &o.Credits, &o.InfoURL); err != nil {
+		if err := rows.Scan(&o.ID, &o.ChoiceID, &o.Title, &o.SeatsLimit, &o.Credits, &o.Semester, &o.TeacherName, &o.InfoURL); err != nil {
 			return nil, err
 		}
 		result = append(result, o)
@@ -634,7 +732,7 @@ func scanChoices(rows pgx.Rows) ([]domain.Choice, error) {
 	var result []domain.Choice
 	for rows.Next() {
 		var c domain.Choice
-		if err := rows.Scan(&c.ID, &c.Code, &c.Title, &c.Type, &c.Deadline, &c.MinSelected, &c.MaxSelected, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Code, &c.Title, &c.Type, &c.ProgramName, &c.ProgramHead, &c.Deadline, &c.MinSelected, &c.MaxSelected, &c.CreatedAt); err != nil {
 			return nil, err
 		}
 		result = append(result, c)
@@ -646,7 +744,7 @@ func scanOptions(rows pgx.Rows) ([]domain.ChoiceOption, error) {
 	var result []domain.ChoiceOption
 	for rows.Next() {
 		var o domain.ChoiceOption
-		if err := rows.Scan(&o.ID, &o.ChoiceID, &o.Title, &o.SeatsLimit, &o.Credits, &o.InfoURL, &o.Occupied); err != nil {
+		if err := rows.Scan(&o.ID, &o.ChoiceID, &o.Title, &o.SeatsLimit, &o.Credits, &o.Semester, &o.TeacherName, &o.InfoURL, &o.Occupied); err != nil {
 			return nil, err
 		}
 		result = append(result, o)
@@ -661,8 +759,8 @@ func scanEnrollments(rows pgx.Rows) ([]domain.Enrollment, error) {
 		if err := rows.Scan(
 			&e.ID, &e.Source, &e.CreatedAt,
 			&e.Student.ID, &e.Student.FullName, &e.Student.GroupCode, &e.Student.TelegramID, &e.Student.CreatedAt, &e.Student.UpdatedAt,
-			&e.Choice.ID, &e.Choice.Code, &e.Choice.Title, &e.Choice.Type, &e.Choice.Deadline, &e.Choice.MinSelected, &e.Choice.MaxSelected, &e.Choice.CreatedAt,
-			&e.Option.ID, &e.Option.ChoiceID, &e.Option.Title, &e.Option.SeatsLimit, &e.Option.Credits, &e.Option.InfoURL, &e.Option.Occupied,
+			&e.Choice.ID, &e.Choice.Code, &e.Choice.Title, &e.Choice.Type, &e.Choice.ProgramName, &e.Choice.ProgramHead, &e.Choice.Deadline, &e.Choice.MinSelected, &e.Choice.MaxSelected, &e.Choice.CreatedAt,
+			&e.Option.ID, &e.Option.ChoiceID, &e.Option.Title, &e.Option.SeatsLimit, &e.Option.Credits, &e.Option.Semester, &e.Option.TeacherName, &e.Option.InfoURL, &e.Option.Occupied,
 		); err != nil {
 			return nil, err
 		}
@@ -675,8 +773,8 @@ func enrollmentSelect() string {
 	return `
 		SELECT e.id, e.source, e.created_at,
 		       s.id, s.full_name, s.group_code, s.telegram_id, s.created_at, s.updated_at,
-		       c.id, c.code, c.title, c.type, c.deadline, c.min_selected, c.max_selected, c.created_at,
-		       o.id, o.choice_id, o.title, o.seats_limit, o.credits, o.info_url,
+		       c.id, c.code, c.title, c.type, c.program_name, c.program_head, c.deadline, c.min_selected, c.max_selected, c.created_at,
+		       o.id, o.choice_id, o.title, o.seats_limit, o.credits, o.semester, o.teacher_name, o.info_url,
 		       (SELECT COUNT(*)::int FROM enrollments oe WHERE oe.option_id=o.id) AS occupied
 		FROM enrollments e
 		JOIN students s ON s.id=e.student_id
@@ -703,4 +801,20 @@ func uniqueInt64(values []int64) map[int64]struct{} {
 
 func rollback(ctx context.Context, tx pgx.Tx) {
 	_ = tx.Rollback(ctx)
+}
+
+func NormalizeName(raw string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(raw)), " ")
+}
+
+func NameKey(raw string) string {
+	return strings.ToLower(strings.ReplaceAll(NormalizeName(raw), "ё", "е"))
+}
+
+func NormalizeGroup(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	return "/" + strings.TrimLeft(raw, "/")
 }

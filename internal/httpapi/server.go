@@ -37,11 +37,14 @@ func New(svc *service.Service) http.Handler {
 		r.Get("/students/{id}/enrollments", s.studentEnrollments)
 		r.Get("/students/{id}/application.docx", s.applicationDocx)
 		r.Post("/students/{id}/choices/{code}/submit", s.submitChoice)
+		r.Post("/admin/students/{id}/choices/{code}/submit", s.adminSubmitChoice)
 		r.Get("/choices", s.listChoices)
 		r.Get("/choices/{code}", s.choice)
 		r.Get("/choices/{code}/options", s.choiceOptions)
 		r.Post("/choices/{code}/auto-assign", s.autoAssign)
 		r.Get("/export/results", s.exportResults)
+		r.Get("/export/students", s.exportStudents)
+		r.Get("/export/registered", s.exportRegistered)
 	})
 	return r
 }
@@ -167,6 +170,27 @@ func (s *Server) submitChoice(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, enrollments)
 }
 
+func (s *Server) adminSubmitChoice(w http.ResponseWriter, r *http.Request) {
+	id, err := pathID(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	var req struct {
+		OptionIDs []int64 `json:"option_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	enrollments, err := s.svc.AdminSubmitChoice(r.Context(), id, chi.URLParam(r, "code"), req.OptionIDs)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, enrollments)
+}
+
 func (s *Server) listChoices(w http.ResponseWriter, r *http.Request) {
 	choices, err := s.svc.ListChoices(r.Context())
 	if err != nil {
@@ -222,6 +246,50 @@ func (s *Server) exportResults(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 	w.Header().Set("Content-Disposition", `attachment; filename="results.csv"`)
+	_, _ = w.Write(data)
+}
+
+func (s *Server) exportStudents(w http.ResponseWriter, r *http.Request) {
+	format := strings.ToLower(r.URL.Query().Get("format"))
+	if format == "json" {
+		data, err := s.svc.ExportStudentsJSON(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_, _ = w.Write(data)
+		return
+	}
+	data, err := s.svc.ExportStudentsCSV(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="students.csv"`)
+	_, _ = w.Write(data)
+}
+
+func (s *Server) exportRegistered(w http.ResponseWriter, r *http.Request) {
+	format := strings.ToLower(r.URL.Query().Get("format"))
+	if format == "json" {
+		data, err := s.svc.ExportRegisteredJSON(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		_, _ = w.Write(data)
+		return
+	}
+	data, err := s.svc.ExportRegisteredCSV(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="registered_students.csv"`)
 	_, _ = w.Write(data)
 }
 

@@ -137,6 +137,8 @@ func choiceRowFromFields(get func(...string) string) (domain.ChoiceImportRow, er
 		ChoiceCode:  strings.TrimSpace(get("choice_code", "код_выбора")),
 		ChoiceTitle: strings.TrimSpace(get("choice_title", "название_выбора")),
 		ChoiceType:  domain.ChoiceType(strings.TrimSpace(get("choice_type", "тип_выбора"))),
+		ProgramName: normalizeSpace(get("program_name", "ооп", "наименование_ооп")),
+		ProgramHead: normalizeSpace(get("program_head", "руководитель_оп", "фио_руководителя")),
 		GroupCodes:  splitList(get("group_codes", "группы")),
 		Deadline:    deadline,
 		MinSelected: parseInt(get("min_selected", "минимум"), 0),
@@ -144,6 +146,8 @@ func choiceRowFromFields(get func(...string) string) (domain.ChoiceImportRow, er
 		OptionTitle: strings.TrimSpace(get("option_title", "дисциплина")),
 		SeatsLimit:  parseInt(get("seats_limit", "мест"), 0),
 		Credits:     parseInt(get("credits", "зачетные_единицы"), 0),
+		Semester:    normalizeSpace(get("semester", "period", "семестр", "период")),
+		TeacherName: normalizeSpace(get("teacher_name", "руководитель_дисциплины", "преподаватель")),
 		InfoURL:     strings.TrimSpace(get("info_url", "ссылка")),
 	}, nil
 }

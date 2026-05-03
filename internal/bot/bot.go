@@ -69,10 +69,13 @@ func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 		b.handleDocument(ctx, msg)
 		return
 	}
+	if b.handleMenuText(ctx, msg) {
+		return
+	}
 	if msg.IsCommand() {
 		switch msg.Command() {
 		case "start", "help":
-			b.send(msg.Chat.ID, helpText(b.isAdmin(msg.From.ID)))
+			b.sendMenu(ctx, msg.Chat.ID, msg.From.ID, helpText(b.isAdmin(ctx, msg.From.ID)))
 		case "register":
 			b.startRegistration(msg.Chat.ID)
 		case "choices":
@@ -82,13 +85,31 @@ func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 		case "statement":
 			b.sendStatement(ctx, msg.Chat.ID, msg.From.ID)
 		case "admin":
-			b.send(msg.Chat.ID, adminText())
+			b.sendMenu(ctx, msg.Chat.ID, msg.From.ID, adminText())
 		case "students":
 			b.adminStudents(ctx, msg)
 		case "auto":
 			b.adminAuto(ctx, msg)
 		case "export_csv":
 			b.adminExportCSV(ctx, msg)
+		case "export_json":
+			b.adminExportJSON(ctx, msg)
+		case "export_students_csv":
+			b.adminExportStudentsCSV(ctx, msg)
+		case "export_students_json":
+			b.adminExportStudentsJSON(ctx, msg)
+		case "export_registered_csv":
+			b.adminExportRegisteredCSV(ctx, msg)
+		case "export_registered_json":
+			b.adminExportRegisteredJSON(ctx, msg)
+		case "admins":
+			b.adminListAdmins(ctx, msg)
+		case "add_admin":
+			b.adminAddAdmin(ctx, msg)
+		case "remove_admin":
+			b.adminRemoveAdmin(ctx, msg)
+		case "set_choice":
+			b.adminSetChoice(ctx, msg)
 		default:
 			b.send(msg.Chat.ID, "Неизвестная команда. Нажмите /help.")
 		}
@@ -98,6 +119,24 @@ func (b *Bot) handleMessage(ctx context.Context, msg *tgbotapi.Message) {
 		return
 	}
 	b.send(msg.Chat.ID, "Выберите команду: /choices, /my, /statement или /help.")
+}
+
+func (b *Bot) handleMenuText(ctx context.Context, msg *tgbotapi.Message) bool {
+	switch strings.TrimSpace(msg.Text) {
+	case "Регистрация":
+		b.startRegistration(msg.Chat.ID)
+	case "Доступные выборы":
+		b.sendChoices(ctx, msg.Chat.ID, msg.From.ID)
+	case "Мои записи":
+		b.sendEnrollments(ctx, msg.Chat.ID, msg.From.ID)
+	case "Заявление":
+		b.sendStatement(ctx, msg.Chat.ID, msg.From.ID)
+	case "Админ-панель":
+		b.sendMenu(ctx, msg.Chat.ID, msg.From.ID, adminText())
+	default:
+		return false
+	}
+	return true
 }
 
 func (b *Bot) handleCallback(ctx context.Context, cb *tgbotapi.CallbackQuery) {
@@ -325,7 +364,7 @@ func (b *Bot) sendStatement(ctx context.Context, chatID, telegramID int64) {
 }
 
 func (b *Bot) handleDocument(ctx context.Context, msg *tgbotapi.Message) {
-	if !b.isAdmin(msg.From.ID) {
+	if !b.isAdmin(ctx, msg.From.ID) {
 		b.send(msg.Chat.ID, "Загрузка файлов доступна только администратору.")
 		return
 	}
@@ -369,7 +408,7 @@ func (b *Bot) handleDocument(ctx context.Context, msg *tgbotapi.Message) {
 }
 
 func (b *Bot) adminStudents(ctx context.Context, msg *tgbotapi.Message) {
-	if !b.isAdmin(msg.From.ID) {
+	if !b.isAdmin(ctx, msg.From.ID) {
 		b.send(msg.Chat.ID, "Команда доступна только администратору.")
 		return
 	}
@@ -389,7 +428,7 @@ func (b *Bot) adminStudents(ctx context.Context, msg *tgbotapi.Message) {
 }
 
 func (b *Bot) adminAuto(ctx context.Context, msg *tgbotapi.Message) {
-	if !b.isAdmin(msg.From.ID) {
+	if !b.isAdmin(ctx, msg.From.ID) {
 		b.send(msg.Chat.ID, "Команда доступна только администратору.")
 		return
 	}
@@ -403,7 +442,7 @@ func (b *Bot) adminAuto(ctx context.Context, msg *tgbotapi.Message) {
 }
 
 func (b *Bot) adminExportCSV(ctx context.Context, msg *tgbotapi.Message) {
-	if !b.isAdmin(msg.From.ID) {
+	if !b.isAdmin(ctx, msg.From.ID) {
 		b.send(msg.Chat.ID, "Команда доступна только администратору.")
 		return
 	}
@@ -416,12 +455,202 @@ func (b *Bot) adminExportCSV(ctx context.Context, msg *tgbotapi.Message) {
 	_, _ = b.api.Send(tgbotapi.NewDocument(msg.Chat.ID, file))
 }
 
+func (b *Bot) adminExportJSON(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	data, err := b.svc.ExportResultsJSON(ctx)
+	if err != nil {
+		b.send(msg.Chat.ID, "Ошибка экспорта: "+err.Error())
+		return
+	}
+	b.sendFile(msg.Chat.ID, "results_"+time.Now().Format("20060102_150405")+".json", data)
+}
+
+func (b *Bot) adminExportStudentsCSV(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	data, err := b.svc.ExportStudentsCSV(ctx)
+	if err != nil {
+		b.send(msg.Chat.ID, "Ошибка экспорта: "+err.Error())
+		return
+	}
+	b.sendFile(msg.Chat.ID, "students_"+time.Now().Format("20060102_150405")+".csv", data)
+}
+
+func (b *Bot) adminExportStudentsJSON(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	data, err := b.svc.ExportStudentsJSON(ctx)
+	if err != nil {
+		b.send(msg.Chat.ID, "Ошибка экспорта: "+err.Error())
+		return
+	}
+	b.sendFile(msg.Chat.ID, "students_"+time.Now().Format("20060102_150405")+".json", data)
+}
+
+func (b *Bot) adminExportRegisteredCSV(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	data, err := b.svc.ExportRegisteredCSV(ctx)
+	if err != nil {
+		b.send(msg.Chat.ID, "Ошибка экспорта: "+err.Error())
+		return
+	}
+	b.sendFile(msg.Chat.ID, "registered_"+time.Now().Format("20060102_150405")+".csv", data)
+}
+
+func (b *Bot) adminExportRegisteredJSON(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	data, err := b.svc.ExportRegisteredJSON(ctx)
+	if err != nil {
+		b.send(msg.Chat.ID, "Ошибка экспорта: "+err.Error())
+		return
+	}
+	b.sendFile(msg.Chat.ID, "registered_"+time.Now().Format("20060102_150405")+".json", data)
+}
+
+func (b *Bot) adminListAdmins(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	admins, err := b.svc.ListAdmins(ctx)
+	if err != nil {
+		b.send(msg.Chat.ID, "Ошибка: "+err.Error())
+		return
+	}
+	if len(admins) == 0 {
+		b.send(msg.Chat.ID, "Администраторов в БД пока нет. Проверьте ADMIN_TELEGRAM_IDS.")
+		return
+	}
+	var lines []string
+	for _, id := range admins {
+		lines = append(lines, strconv.FormatInt(id, 10))
+	}
+	b.send(msg.Chat.ID, "Администраторы:\n"+strings.Join(lines, "\n"))
+}
+
+func (b *Bot) adminAddAdmin(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	id, err := strconv.ParseInt(strings.TrimSpace(msg.CommandArguments()), 10, 64)
+	if err != nil {
+		b.send(msg.Chat.ID, "Формат: /add_admin TELEGRAM_ID")
+		return
+	}
+	if err := b.svc.AddAdmin(ctx, id, msg.From.ID); err != nil {
+		b.send(msg.Chat.ID, "Не удалось добавить администратора: "+err.Error())
+		return
+	}
+	b.mu.Lock()
+	b.admins[id] = struct{}{}
+	b.mu.Unlock()
+	b.send(msg.Chat.ID, "Администратор добавлен.")
+}
+
+func (b *Bot) adminRemoveAdmin(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	id, err := strconv.ParseInt(strings.TrimSpace(msg.CommandArguments()), 10, 64)
+	if err != nil {
+		b.send(msg.Chat.ID, "Формат: /remove_admin TELEGRAM_ID")
+		return
+	}
+	if id == msg.From.ID {
+		b.send(msg.Chat.ID, "Нельзя снять права администратора с самого себя этой командой.")
+		return
+	}
+	if err := b.svc.RemoveAdmin(ctx, id); err != nil {
+		b.send(msg.Chat.ID, "Не удалось удалить администратора: "+err.Error())
+		return
+	}
+	b.mu.Lock()
+	delete(b.admins, id)
+	b.mu.Unlock()
+	b.send(msg.Chat.ID, "Администратор удален.")
+}
+
+func (b *Bot) adminSetChoice(ctx context.Context, msg *tgbotapi.Message) {
+	if !b.isAdmin(ctx, msg.From.ID) {
+		b.send(msg.Chat.ID, "Команда доступна только администратору.")
+		return
+	}
+	parts := strings.Fields(msg.CommandArguments())
+	if len(parts) < 3 {
+		b.send(msg.Chat.ID, "Формат: /set_choice STUDENT_ID CHOICE_CODE OPTION_ID[,OPTION_ID]")
+		return
+	}
+	studentID, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		b.send(msg.Chat.ID, "Некорректный STUDENT_ID.")
+		return
+	}
+	var optionIDs []int64
+	for _, part := range strings.Split(parts[2], ",") {
+		id, err := strconv.ParseInt(strings.TrimSpace(part), 10, 64)
+		if err != nil {
+			b.send(msg.Chat.ID, "Некорректный список OPTION_ID.")
+			return
+		}
+		optionIDs = append(optionIDs, id)
+	}
+	if _, err := b.svc.AdminSubmitChoice(ctx, studentID, parts[1], optionIDs); err != nil {
+		b.send(msg.Chat.ID, "Не удалось изменить выбор: "+err.Error())
+		return
+	}
+	b.send(msg.Chat.ID, "Выбор студента изменен.")
+}
+
 func (b *Bot) send(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
 	_, _ = b.api.Send(msg)
 }
 
-func (b *Bot) isAdmin(id int64) bool {
+func (b *Bot) sendMenu(ctx context.Context, chatID, telegramID int64, text string) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	rows := [][]tgbotapi.KeyboardButton{
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Регистрация"),
+			tgbotapi.NewKeyboardButton("Доступные выборы"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("Мои записи"),
+			tgbotapi.NewKeyboardButton("Заявление"),
+		),
+	}
+	if b.isAdmin(ctx, telegramID) {
+		rows = append(rows, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Админ-панель")))
+	}
+	keyboard := tgbotapi.NewReplyKeyboard(rows...)
+	keyboard.ResizeKeyboard = true
+	msg.ReplyMarkup = keyboard
+	_, _ = b.api.Send(msg)
+}
+
+func (b *Bot) sendFile(chatID int64, filename string, data []byte) {
+	file := tgbotapi.FileBytes{Name: filename, Bytes: data}
+	_, _ = b.api.Send(tgbotapi.NewDocument(chatID, file))
+}
+
+func (b *Bot) isAdmin(ctx context.Context, id int64) bool {
+	if b.svc.IsAdmin(ctx, id) {
+		return true
+	}
 	_, ok := b.admins[id]
 	return ok
 }
@@ -460,5 +689,5 @@ func helpText(admin bool) string {
 }
 
 func adminText() string {
-	return "Админ-команды:\n/students - первые студенты\n/import_students - отправьте CSV/JSON файлом с этой подписью\n/import_choices - отправьте CSV/JSON файлом с этой подписью\n/auto CODE - автодораспределение обязательного выбора\n/export_csv - выгрузка результатов"
+	return "Админ-команды:\n/students - первые студенты\n/import_students - отправьте CSV/JSON файлом с этой подписью\n/import_choices - отправьте CSV/JSON файлом с этой подписью\n/auto CODE - автодораспределение обязательного выбора\n/export_csv и /export_json - выгрузка распределения\n/export_students_csv и /export_students_json - весь список студентов\n/export_registered_csv и /export_registered_json - зарегистрированные студенты с выборами\n/admins - список админов\n/add_admin TELEGRAM_ID - добавить админа\n/remove_admin TELEGRAM_ID - убрать админа\n/set_choice STUDENT_ID CHOICE_CODE OPTION_ID[,OPTION_ID] - изменить выбор студента"
 }

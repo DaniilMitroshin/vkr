@@ -40,6 +40,9 @@ func main() {
 
 	store := repository.New(pool)
 	svc := service.New(store)
+	if err = svc.SeedAdmins(ctx, cfg.AdminTelegramIDs); err != nil {
+		log.Fatalf("seed admins: %v", err)
+	}
 	if err = seedOnStart(ctx, cfg, svc); err != nil {
 		log.Fatalf("seed on start: %v", err)
 	}
