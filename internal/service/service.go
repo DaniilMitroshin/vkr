@@ -65,7 +65,11 @@ func (s *Service) ImportChoicesFile(ctx context.Context, filename string, data [
 }
 
 func (s *Service) RegisterStudent(ctx context.Context, telegramID int64, fullName, groupCode string) (domain.Student, error) {
-	return s.store.RegisterStudent(ctx, telegramID, fullName, normalizeGroup(groupCode))
+	normalized := normalizeGroup(groupCode)
+	if normalized == "" {
+		return domain.Student{}, fmt.Errorf("invalid group_code format: expected direction/group, e.g. 5130904/20101")
+	}
+	return s.store.RegisterStudent(ctx, telegramID, fullName, normalized)
 }
 
 func (s *Service) CurrentStudent(ctx context.Context, telegramID int64) (domain.Student, error) {
@@ -263,8 +267,17 @@ func (s *Service) EnrollmentsForStudent(ctx context.Context, studentID int64) ([
 
 func normalizeGroup(raw string) string {
 	raw = strings.TrimSpace(raw)
-	if raw == "" || raw[0] == '/' {
-		return raw
+	if raw == "" {
+		return ""
 	}
-	return "/" + raw
+	parts := strings.Split(raw, "/")
+	if len(parts) != 2 {
+		return ""
+	}
+	left := strings.TrimSpace(parts[0])
+	right := strings.TrimSpace(parts[1])
+	if left == "" || right == "" {
+		return ""
+	}
+	return left + "/" + right
 }

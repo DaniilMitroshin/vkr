@@ -2,6 +2,7 @@ package importer
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -36,5 +37,16 @@ func TestParseChoicesSample(t *testing.T) {
 	}
 	if rows[0].ChoiceCode == "" || len(rows[0].GroupCodes) == 0 {
 		t.Fatalf("bad first row: %+v", rows[0])
+	}
+}
+
+func TestParseStudentsRejectLegacyGroupFormat(t *testing.T) {
+	data := []byte(`[{"full_name":"Иванов Иван Иванович","group_code":"/20101","direction_code":"5130904"}]`)
+	_, err := ParseStudents("students.json", data)
+	if err == nil {
+		t.Fatal("expected legacy group format to fail")
+	}
+	if !strings.Contains(err.Error(), "must not contain '/'") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

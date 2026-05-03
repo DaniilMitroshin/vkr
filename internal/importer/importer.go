@@ -53,10 +53,13 @@ func parseStudentsCSV(data []byte) ([]domain.StudentImportRow, error) {
 	}
 	idx := headerIndex(records[0])
 	var rows []domain.StudentImportRow
-	for _, rec := range records[1:] {
+	for i, rec := range records[1:] {
 		fullName := field(rec, idx, "фио", "full_name")
-		groupCode := field(rec, idx, "группа", "group_code")
-		appendStudent(&rows, fullName, groupCode)
+		direction := field(rec, idx, "направление", "direction_code")
+		group := field(rec, idx, "группа", "group_code", "group")
+		if err := appendStudent(&rows, fullName, direction, group); err != nil {
+			return nil, fmt.Errorf("students csv row %d: %w", i+2, err)
+		}
 	}
 	return rows, nil
 }
@@ -70,10 +73,13 @@ func parseStudentsJSON(data []byte) ([]domain.StudentImportRow, error) {
 		}
 	}
 	var rows []domain.StudentImportRow
-	for _, item := range raw {
-		fullName := anyString(item["full_name"], item["ФИО"], item["fio"])
-		groupCode := anyString(item["group_code"], item["Группа"], item["group"])
-		appendStudent(&rows, fullName, groupCode)
+	for i, item := range raw {
+		fullName := anyString(item["full_name"], item["ФИО"], item["fio"], item["фио"])
+		direction := anyString(item["direction_code"], item["Направление"], item["направление"])
+		group := anyString(item["group_code"], item["Группа"], item["group"], item["группа"])
+		if err := appendStudent(&rows, fullName, direction, group); err != nil {
+			return nil, fmt.Errorf("students json row %d: %w", i+1, err)
+		}
 	}
 	return rows, nil
 }
@@ -133,13 +139,17 @@ func choiceRowFromFields(get func(...string) string) (domain.ChoiceImportRow, er
 	if err != nil {
 		return domain.ChoiceImportRow{}, err
 	}
+	groupCodes, err := splitList(get("group_codes", "группы"))
+	if err != nil {
+		return domain.ChoiceImportRow{}, err
+	}
 	return domain.ChoiceImportRow{
 		ChoiceCode:  strings.TrimSpace(get("choice_code", "код_выбора")),
 		ChoiceTitle: strings.TrimSpace(get("choice_title", "название_выбора")),
 		ChoiceType:  domain.ChoiceType(strings.TrimSpace(get("choice_type", "тип_выбора"))),
 		ProgramName: normalizeSpace(get("program_name", "ооп", "наименование_ооп")),
 		ProgramHead: normalizeSpace(get("program_head", "руководитель_оп", "фио_руководителя")),
-		GroupCodes:  splitList(get("group_codes", "группы")),
+		GroupCodes:  groupCodes,
 		Deadline:    deadline,
 		MinSelected: parseInt(get("min_selected", "минимум"), 0),
 		MaxSelected: parseInt(get("max_selected", "максимум"), 1),
@@ -152,13 +162,29 @@ func choiceRowFromFields(get func(...string) string) (domain.ChoiceImportRow, er
 	}, nil
 }
 
-func appendStudent(rows *[]domain.StudentImportRow, fullName, groupCode string) {
+func appendStudent(rows *[]domain.StudentImportRow, fullName, direction, group string) error {
 	fullName = normalizeSpace(fullName)
-	groupCode = normalizeGroup(groupCode)
-	if fullName == "" || groupCode == "" || strings.EqualFold(fullName, "nan") || strings.EqualFold(groupCode, "nan") {
-		return
+	direction = strings.TrimSpace(direction)
+	group = strings.TrimSpace(group)
+
+	if fullName == "" && direction == "" && group == "" {
+		return nil
+	}
+	if strings.EqualFold(fullName, "nan") || strings.EqualFold(direction, "nan") || strings.EqualFold(group, "nan") {
+		return nil
+	}
+	if fullName == "" || direction == "" || group == "" {
+		return fmt.Errorf("full_name, direction and group are required")
+	}
+	if strings.Contains(direction, "/") || strings.Contains(group, "/") {
+		return fmt.Errorf("direction and group must not contain '/' separately: direction=%q group=%q", direction, group)
+	}
+	groupCode := normalizeGroup(direction + "/" + group)
+	if groupCode == "" {
+		return fmt.Errorf("invalid group_code format %q, expected direction/group", direction+"/"+group)
 	}
 	*rows = append(*rows, domain.StudentImportRow{FullName: fullName, GroupCode: groupCode})
+	return nil
 }
 
 func normalizeJSONish(data []byte) []byte {
@@ -203,15 +229,20 @@ func anyString(values ...any) string {
 	return ""
 }
 
-func splitList(raw string) []string {
+func splitList(raw string) ([]string, error) {
 	var result []string
 	for _, part := range regexp.MustCompile(`[|,;]`).Split(raw, -1) {
-		part = normalizeGroup(part)
-		if part != "" {
-			result = append(result, part)
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
 		}
+		normalized := normalizeGroup(trimmed)
+		if normalized == "" {
+			return nil, fmt.Errorf("invalid group code %q, expected direction/group", trimmed)
+		}
+		result = append(result, normalized)
 	}
-	return result
+	return result, nil
 }
 
 func parseInt(raw string, fallback int) int {
@@ -245,7 +276,16 @@ func normalizeGroup(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	return "/" + strings.TrimLeft(raw, "/")
+	parts := strings.Split(raw, "/")
+	if len(parts) != 2 {
+		return ""
+	}
+	left := strings.TrimSpace(parts[0])
+	right := strings.TrimSpace(parts[1])
+	if left == "" || right == "" {
+		return ""
+	}
+	return left + "/" + right
 }
 
 func normalizeSpace(raw string) string {
