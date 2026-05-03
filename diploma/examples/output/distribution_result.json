@@ -1,0 +1,446 @@
+[
+  {
+    "id": 17,
+    "student": {
+      "id": 1,
+      "full_name": "Авдышева Полина Георгиевна",
+      "group_code": "5130904/20101",
+      "telegram_id": 5722205487,
+      "created_at": "2026-05-03T13:11:59.209904Z",
+      "updated_at": "2026-05-03T14:06:41.614135Z"
+    },
+    "choice": {
+      "id": 2,
+      "code": "FAC-SPRING",
+      "title": "Факультативы весеннего семестра",
+      "type": "elective",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-09-20T20:59:00Z",
+      "min_selected": 0,
+      "max_selected": 1,
+      "created_at": "2026-05-03T13:11:59.448932Z"
+    },
+    "option": {
+      "id": 3,
+      "choice_id": 2,
+      "title": "Академическое письмо",
+      "seats_limit": 25,
+      "credits": 2,
+      "semester": "1-4",
+      "teacher_name": "Сидорова Анна Сергеевна",
+      "info_url": "https://example.edu/courses/academic-writing",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:28:45.557551Z"
+  },
+  {
+    "id": 15,
+    "student": {
+      "id": 120,
+      "full_name": "Радцева Диана Вячеславовна",
+      "group_code": "5130904/30101",
+      "telegram_id": 666880907,
+      "created_at": "2026-05-03T13:13:22.667905Z",
+      "updated_at": "2026-05-03T13:25:02.338468Z"
+    },
+    "choice": {
+      "id": 2,
+      "code": "FAC-SPRING",
+      "title": "Факультативы весеннего семестра",
+      "type": "elective",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-09-20T20:59:00Z",
+      "min_selected": 0,
+      "max_selected": 1,
+      "created_at": "2026-05-03T13:11:59.448932Z"
+    },
+    "option": {
+      "id": 3,
+      "choice_id": 2,
+      "title": "Академическое письмо",
+      "seats_limit": 25,
+      "credits": 2,
+      "semester": "1-4",
+      "teacher_name": "Сидорова Анна Сергеевна",
+      "info_url": "https://example.edu/courses/academic-writing",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:27:50.931694Z"
+  },
+  {
+    "id": 18,
+    "student": {
+      "id": 1,
+      "full_name": "Авдышева Полина Георгиевна",
+      "group_code": "5130904/20101",
+      "telegram_id": 5722205487,
+      "created_at": "2026-05-03T13:11:59.209904Z",
+      "updated_at": "2026-05-03T14:06:41.614135Z"
+    },
+    "choice": {
+      "id": 2,
+      "code": "FAC-SPRING",
+      "title": "Факультативы весеннего семестра",
+      "type": "elective",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-09-20T20:59:00Z",
+      "min_selected": 0,
+      "max_selected": 1,
+      "created_at": "2026-05-03T13:11:59.448932Z"
+    },
+    "option": {
+      "id": 4,
+      "choice_id": 2,
+      "title": "Технический английский",
+      "seats_limit": 30,
+      "credits": 2,
+      "semester": "1-4",
+      "teacher_name": "Сидорова Анна Сергеевна",
+      "info_url": "https://example.edu/courses/technical-english",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:28:45.557551Z"
+  },
+  {
+    "id": 16,
+    "student": {
+      "id": 120,
+      "full_name": "Радцева Диана Вячеславовна",
+      "group_code": "5130904/30101",
+      "telegram_id": 666880907,
+      "created_at": "2026-05-03T13:13:22.667905Z",
+      "updated_at": "2026-05-03T13:25:02.338468Z"
+    },
+    "choice": {
+      "id": 2,
+      "code": "FAC-SPRING",
+      "title": "Факультативы весеннего семестра",
+      "type": "elective",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-09-20T20:59:00Z",
+      "min_selected": 0,
+      "max_selected": 1,
+      "created_at": "2026-05-03T13:11:59.448932Z"
+    },
+    "option": {
+      "id": 4,
+      "choice_id": 2,
+      "title": "Технический английский",
+      "seats_limit": 30,
+      "credits": 2,
+      "semester": "1-4",
+      "teacher_name": "Сидорова Анна Сергеевна",
+      "info_url": "https://example.edu/courses/technical-english",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:27:50.931694Z"
+  },
+  {
+    "id": 21,
+    "student": {
+      "id": 1,
+      "full_name": "Авдышева Полина Георгиевна",
+      "group_code": "5130904/20101",
+      "telegram_id": 5722205487,
+      "created_at": "2026-05-03T13:11:59.209904Z",
+      "updated_at": "2026-05-03T14:06:41.614135Z"
+    },
+    "choice": {
+      "id": 3,
+      "code": "MOB-HUM-2026",
+      "title": "Модуль мобильности: гуманитарные технологии",
+      "type": "mobility",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-15T20:59:00Z",
+      "min_selected": 6,
+      "max_selected": 9,
+      "created_at": "2026-05-03T13:11:59.452309Z"
+    },
+    "option": {
+      "id": 7,
+      "choice_id": 3,
+      "title": "Коммуникации в проектных командах",
+      "seats_limit": 40,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Орлова Екатерина Игоревна",
+      "info_url": "https://example.edu/courses/team-communications",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:29:02.884396Z"
+  },
+  {
+    "id": 9,
+    "student": {
+      "id": 120,
+      "full_name": "Радцева Диана Вячеславовна",
+      "group_code": "5130904/30101",
+      "telegram_id": 666880907,
+      "created_at": "2026-05-03T13:13:22.667905Z",
+      "updated_at": "2026-05-03T13:25:02.338468Z"
+    },
+    "choice": {
+      "id": 3,
+      "code": "MOB-HUM-2026",
+      "title": "Модуль мобильности: гуманитарные технологии",
+      "type": "mobility",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-15T20:59:00Z",
+      "min_selected": 6,
+      "max_selected": 9,
+      "created_at": "2026-05-03T13:11:59.452309Z"
+    },
+    "option": {
+      "id": 7,
+      "choice_id": 3,
+      "title": "Коммуникации в проектных командах",
+      "seats_limit": 40,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Орлова Екатерина Игоревна",
+      "info_url": "https://example.edu/courses/team-communications",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:14:51.73933Z"
+  },
+  {
+    "id": 20,
+    "student": {
+      "id": 1,
+      "full_name": "Авдышева Полина Георгиевна",
+      "group_code": "5130904/20101",
+      "telegram_id": 5722205487,
+      "created_at": "2026-05-03T13:11:59.209904Z",
+      "updated_at": "2026-05-03T14:06:41.614135Z"
+    },
+    "choice": {
+      "id": 3,
+      "code": "MOB-HUM-2026",
+      "title": "Модуль мобильности: гуманитарные технологии",
+      "type": "mobility",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-15T20:59:00Z",
+      "min_selected": 6,
+      "max_selected": 9,
+      "created_at": "2026-05-03T13:11:59.452309Z"
+    },
+    "option": {
+      "id": 6,
+      "choice_id": 3,
+      "title": "Право в цифровой среде",
+      "seats_limit": 40,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Смирнов Алексей Петрович",
+      "info_url": "https://example.edu/courses/digital-law",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:29:02.884396Z"
+  },
+  {
+    "id": 8,
+    "student": {
+      "id": 120,
+      "full_name": "Радцева Диана Вячеславовна",
+      "group_code": "5130904/30101",
+      "telegram_id": 666880907,
+      "created_at": "2026-05-03T13:13:22.667905Z",
+      "updated_at": "2026-05-03T13:25:02.338468Z"
+    },
+    "choice": {
+      "id": 3,
+      "code": "MOB-HUM-2026",
+      "title": "Модуль мобильности: гуманитарные технологии",
+      "type": "mobility",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-15T20:59:00Z",
+      "min_selected": 6,
+      "max_selected": 9,
+      "created_at": "2026-05-03T13:11:59.452309Z"
+    },
+    "option": {
+      "id": 6,
+      "choice_id": 3,
+      "title": "Право в цифровой среде",
+      "seats_limit": 40,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Смирнов Алексей Петрович",
+      "info_url": "https://example.edu/courses/digital-law",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:14:51.73933Z"
+  },
+  {
+    "id": 19,
+    "student": {
+      "id": 1,
+      "full_name": "Авдышева Полина Георгиевна",
+      "group_code": "5130904/20101",
+      "telegram_id": 5722205487,
+      "created_at": "2026-05-03T13:11:59.209904Z",
+      "updated_at": "2026-05-03T14:06:41.614135Z"
+    },
+    "choice": {
+      "id": 3,
+      "code": "MOB-HUM-2026",
+      "title": "Модуль мобильности: гуманитарные технологии",
+      "type": "mobility",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-15T20:59:00Z",
+      "min_selected": 6,
+      "max_selected": 9,
+      "created_at": "2026-05-03T13:11:59.452309Z"
+    },
+    "option": {
+      "id": 5,
+      "choice_id": 3,
+      "title": "Цифровая социология",
+      "seats_limit": 40,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Кузнецова Мария Андреевна",
+      "info_url": "https://example.edu/courses/digital-sociology",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:29:02.884396Z"
+  },
+  {
+    "id": 7,
+    "student": {
+      "id": 120,
+      "full_name": "Радцева Диана Вячеславовна",
+      "group_code": "5130904/30101",
+      "telegram_id": 666880907,
+      "created_at": "2026-05-03T13:13:22.667905Z",
+      "updated_at": "2026-05-03T13:25:02.338468Z"
+    },
+    "choice": {
+      "id": 3,
+      "code": "MOB-HUM-2026",
+      "title": "Модуль мобильности: гуманитарные технологии",
+      "type": "mobility",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-15T20:59:00Z",
+      "min_selected": 6,
+      "max_selected": 9,
+      "created_at": "2026-05-03T13:11:59.452309Z"
+    },
+    "option": {
+      "id": 5,
+      "choice_id": 3,
+      "title": "Цифровая социология",
+      "seats_limit": 40,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Кузнецова Мария Андреевна",
+      "info_url": "https://example.edu/courses/digital-sociology",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:14:51.73933Z"
+  },
+  {
+    "id": 6,
+    "student": {
+      "id": 1,
+      "full_name": "Авдышева Полина Георгиевна",
+      "group_code": "5130904/20101",
+      "telegram_id": 5722205487,
+      "created_at": "2026-05-03T13:11:59.209904Z",
+      "updated_at": "2026-05-03T14:06:41.614135Z"
+    },
+    "choice": {
+      "id": 1,
+      "code": "REQ-SEM7-AI",
+      "title": "Обязательная дисциплина по выбору: интеллектуальные системы",
+      "type": "required_choice",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-30T20:59:00Z",
+      "min_selected": 1,
+      "max_selected": 1,
+      "created_at": "2026-05-03T13:11:59.44337Z"
+    },
+    "option": {
+      "id": 2,
+      "choice_id": 1,
+      "title": "Анализ данных и визуализация",
+      "seats_limit": 35,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Иванов Иван Иванович",
+      "info_url": "https://example.edu/courses/data-viz",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:14:38.704425Z"
+  },
+  {
+    "id": 10,
+    "student": {
+      "id": 120,
+      "full_name": "Радцева Диана Вячеславовна",
+      "group_code": "5130904/30101",
+      "telegram_id": 666880907,
+      "created_at": "2026-05-03T13:13:22.667905Z",
+      "updated_at": "2026-05-03T13:25:02.338468Z"
+    },
+    "choice": {
+      "id": 1,
+      "code": "REQ-SEM7-AI",
+      "title": "Обязательная дисциплина по выбору: интеллектуальные системы",
+      "type": "required_choice",
+      "program_name": "09.03.04 Программная инженерия",
+      "program_head": "Петров Александр Владимирович",
+      "group_codes": null,
+      "deadline": "2026-10-30T20:59:00Z",
+      "min_selected": 1,
+      "max_selected": 1,
+      "created_at": "2026-05-03T13:11:59.44337Z"
+    },
+    "option": {
+      "id": 2,
+      "choice_id": 1,
+      "title": "Анализ данных и визуализация",
+      "seats_limit": 35,
+      "credits": 3,
+      "semester": "7",
+      "teacher_name": "Иванов Иван Иванович",
+      "info_url": "https://example.edu/courses/data-viz",
+      "occupied": 2
+    },
+    "source": "student",
+    "created_at": "2026-05-03T13:14:58.272257Z"
+  }
+]
