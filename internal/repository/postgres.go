@@ -362,6 +362,20 @@ func (p *Postgres) ReplaceStudentChoiceEnrollments(ctx context.Context, studentI
 	if !contains(choice.GroupCodes, student.GroupCode) {
 		return nil, fmt.Errorf("choice is not available for group %s", student.GroupCode)
 	}
+	if source == "student" && choice.Type == domain.ChoiceTypeRequiredChoice {
+		var existing int
+		if err = tx.QueryRow(ctx, `
+			SELECT COUNT(*)::int
+			FROM enrollments e
+			JOIN choice_options o ON o.id=e.option_id
+			WHERE e.student_id=$1 AND o.choice_id=$2
+		`, studentID, choice.ID).Scan(&existing); err != nil {
+			return nil, err
+		}
+		if existing > 0 {
+			return nil, fmt.Errorf("required choice is already selected and cannot be changed")
+		}
+	}
 	options, err := p.lockOptions(ctx, tx, choice.ID, optionIDs)
 	if err != nil {
 		return nil, err
@@ -705,7 +719,9 @@ func ValidateSubmission(choice domain.Choice, options []domain.ChoiceOption) err
 		if credits < choice.MinSelected || credits > choice.MaxSelected {
 			return fmt.Errorf("mobility choice requires %d-%d credits, got %d", choice.MinSelected, choice.MaxSelected, credits)
 		}
-	case domain.ChoiceTypeElective, domain.ChoiceTypeRequiredChoice:
+	case domain.ChoiceTypeElective:
+		return nil
+	case domain.ChoiceTypeRequiredChoice:
 		if count < choice.MinSelected || count > choice.MaxSelected {
 			return fmt.Errorf("choice requires %d-%d options, got %d", choice.MinSelected, choice.MaxSelected, count)
 		}
@@ -816,5 +832,14 @@ func NormalizeGroup(raw string) string {
 	if raw == "" {
 		return ""
 	}
-	return "/" + strings.TrimLeft(raw, "/")
+	parts := strings.Split(raw, "/")
+	if len(parts) != 2 {
+		return ""
+	}
+	left := strings.TrimSpace(parts[0])
+	right := strings.TrimSpace(parts[1])
+	if left == "" || right == "" {
+		return ""
+	}
+	return left + "/" + right
 }

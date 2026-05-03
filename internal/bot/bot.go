@@ -183,7 +183,7 @@ func (b *Bot) continueRegistration(ctx context.Context, msg *tgbotapi.Message) b
 		b.mu.Lock()
 		b.reg[msg.Chat.ID] = state
 		b.mu.Unlock()
-		b.send(msg.Chat.ID, "Введите номер группы, например /20102 или 20102.")
+		b.send(msg.Chat.ID, "Введите код в формате направление/группа, например 5130904/20102.")
 	case "group":
 		student, err := b.svc.RegisterStudent(ctx, msg.From.ID, state.FullName, msg.Text)
 		if err != nil {
@@ -193,7 +193,7 @@ func (b *Bot) continueRegistration(ctx context.Context, msg *tgbotapi.Message) b
 		b.mu.Lock()
 		delete(b.reg, msg.Chat.ID)
 		b.mu.Unlock()
-		b.send(msg.Chat.ID, fmt.Sprintf("Готово, %s, группа %s. Теперь можно открыть /choices.", student.FullName, student.GroupCode))
+		b.send(msg.Chat.ID, fmt.Sprintf("Готово, %s, код %s. Теперь можно открыть /choices.", student.FullName, student.GroupCode))
 	}
 	return true
 }
@@ -255,7 +255,7 @@ func (b *Bot) showChoice(ctx context.Context, chatID, telegramID int64, code str
 		lines = append(lines, label)
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("pick:%s:%d", code, option.ID))))
 	}
-	if choice.Type == domain.ChoiceTypeMobility || choice.MaxSelected > 1 {
+	if choice.Type == domain.ChoiceTypeMobility || choice.Type == domain.ChoiceTypeElective || choice.MaxSelected > 1 {
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Подтвердить выбранное", "submit:"+code)))
 	}
 	msg := tgbotapi.NewMessage(chatID, strings.Join(lines, "\n"))
@@ -274,7 +274,7 @@ func (b *Bot) pickOption(ctx context.Context, chatID, telegramID int64, code str
 		b.send(chatID, "Сначала зарегистрируйтесь через /register.")
 		return
 	}
-	if choice.Type != domain.ChoiceTypeMobility && choice.MaxSelected == 1 {
+	if choice.Type == domain.ChoiceTypeRequiredChoice && choice.MaxSelected == 1 {
 		if _, err := b.svc.SubmitStudentChoice(ctx, student.ID, code, []int64{optionID}); err != nil {
 			b.send(chatID, "Не удалось записаться: "+err.Error())
 			return
@@ -676,6 +676,9 @@ func choiceAllowed(choices []domain.Choice, code string) bool {
 func limitText(choice domain.Choice) string {
 	if choice.Type == domain.ChoiceTypeMobility {
 		return fmt.Sprintf("%d-%d з.е.", choice.MinSelected, choice.MaxSelected)
+	}
+	if choice.Type == domain.ChoiceTypeElective {
+		return "без ограничений"
 	}
 	return fmt.Sprintf("%d-%d дисциплин", choice.MinSelected, choice.MaxSelected)
 }

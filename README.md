@@ -65,7 +65,7 @@ curl http://localhost:8080/api/choices
 ```bash
 curl -X POST http://localhost:8080/api/students/register \
   -H "Content-Type: application/json" \
-  -d '{"telegram_id":1001,"full_name":"Митрошин Даниил Викторович","group_code":"/20102"}'
+  -d '{"telegram_id":1001,"full_name":"Митрошин Даниил Викторович","group_code":"5130904/20102"}'
 ```
 
 После регистрации можно получить доступные выборы:
@@ -96,7 +96,7 @@ curl "http://localhost:8080/api/students/1/application.docx" -o application.docx
 
 Студент:
 
-- `/register` - регистрация по ФИО и группе;
+- `/register` - регистрация по ФИО и коду `направление/группа` (например, `5130904/20102`);
 - `/choices` - список доступных выборов;
 - `/my` - текущие записи;
 - `/statement` - получить заявление `.docx`.
